@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Performance Dashboard</title>
+<style>
+:root{
+  --ink:#0f172a; --muted:#64748b; --line:#e5e9f2;
+  --brand:#5b21b6; --brand2:#7c3aed; --accent:#0ea5e9; --up:#059669; --down:#dc2626;
+  --up-bg:#e7f6ef; --down-bg:#fdeaea; --amber:#d97706; --soft:#f6f7fb;
+  --grad:linear-gradient(120deg,#4c1d95 0%,#6d28d9 45%,#0ea5e9 120%);
+  --shadow:0 6px 22px rgba(16,24,64,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--soft);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 60px}
+.topbar{background:var(--grad);color:#fff;padding:22px 0 20px;box-shadow:var(--shadow)}
+.topbar .row{max-width:1280px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brandmark{display:flex;align-items:center;gap:14px}
+.logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:22px}
+.title h1{margin:0;font-size:22px;font-weight:800}
+.title p{margin:2px 0 0;font-size:12.5px;opacity:.85}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+.btn-light{background:#fff;color:var(--brand)}
+.btn-light:hover{transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.16);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.26)}
+.btn-sm{padding:6px 11px;font-size:12px;border-radius:8px}
+.btn-csv{background:var(--soft);color:var(--brand);border:1px solid var(--line)}
+.btn-csv:hover{background:#eef0f7}
+#uploader{margin-top:26px}
+.drop{background:#fff;border:2px dashed #c9cede;border-radius:18px;padding:40px 24px;text-align:center;box-shadow:var(--shadow);transition:.2s}
+.drop.drag{border-color:var(--brand2);background:#faf7ff}
+.drop h2{margin:6px 0 4px;font-size:20px}
+.drop p{color:var(--muted);margin:4px 0 16px;font-size:13.5px}
+.drop .hint{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+.tipbox{background:#f3f0fb;border:1px solid #e4dcf7;border-radius:12px;padding:12px 16px;margin:0 auto 6px;max-width:680px;font-size:12.5px;color:#4b3d78;text-align:left}
+.tipbox b{color:var(--brand)}
+.spinner{display:none;margin:18px auto 0;width:34px;height:34px;border:4px solid #e6e2f5;border-top-color:var(--brand2);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress{display:none;margin:14px auto 0;max-width:420px;font-size:12.5px;color:var(--brand2);font-weight:700}
+.filterbar{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:22px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;box-shadow:var(--shadow)}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:150px}
+.fld label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fld select{padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:#fff;color:var(--ink);min-width:150px}
+.filtermeta{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.reset{align-self:center}
+.tabs{display:flex;gap:8px;margin:22px 0 18px;flex-wrap:wrap}
+.tab{padding:10px 18px;font-size:13.5px;font-weight:700;color:#5b4b8a;cursor:pointer;border:1px solid #e4dcf7;background:#fff;border-radius:999px;transition:.15s}
+.tab:hover{background:#f3f0fb}
+.tab.active{color:#fff;border-color:transparent;background:linear-gradient(135deg,#6d5df6 0%,#9d8cff 100%);box-shadow:0 6px 16px rgba(109,93,246,.35)}
+.pane{display:none}
+.pane.active{display:block}
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.g3,.g2{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.metric .cap{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.metric .sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.metric .big{font-size:30px;font-weight:800;margin:10px 0 2px;letter-spacing:-.5px}
+.metric .strip{width:46px;height:4px;border-radius:4px;background:var(--grad);margin-top:2px}
+/* Bold gradient KPI tiles */
+.metric.tile{position:relative;overflow:hidden;border:none;color:#fff;padding:20px 22px;box-shadow:0 10px 26px rgba(16,24,64,.16)}
+.metric.tile>*{position:relative;z-index:1}
+.metric.tile::before{content:"";position:absolute;top:-34px;right:-24px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.13);z-index:0}
+.metric.tile::after{content:"";position:absolute;top:26px;right:-66px;width:128px;height:128px;border-radius:50%;background:rgba(255,255,255,.10);z-index:0}
+.metric.tile .cap{color:rgba(255,255,255,.92)}
+.metric.tile .sub{color:rgba(255,255,255,.82)}
+.metric.tile .big{color:#fff;font-size:34px}
+.metric.tile .strip{display:none}
+.metric.tile .mrow{border-top:1px solid rgba(255,255,255,.22);padding-top:10px}
+.metric.tile .mrow div{color:rgba(255,255,255,.85)}
+.metric.tile .mrow b{color:#fff}
+.metric.tile .badge{background:rgba(255,255,255,.9)!important;color:#3b2e63!important}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;margin-top:12px}
+.badge.up{color:var(--up);background:var(--up-bg)}
+.badge.down{color:var(--down);background:var(--down-bg)}
+.badge.flat{color:var(--muted);background:#eef1f6}
+.mrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px}
+.mrow div{color:var(--muted)}
+.mrow b{color:var(--ink);font-weight:800}
+.sectionhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 12px;flex-wrap:wrap}
+.sectionhead h3{margin:0;font-size:17px;border-left:5px solid #6d5df6;padding-left:11px;line-height:1.15}
+.sectionhead .desc{font-size:12.5px;color:var(--muted);margin-top:2px}
+.svgchart{width:100%}
+.svgchart svg{display:block;width:100%;height:auto}
+.chartcap{font-size:12px;font-weight:800;color:#5b21b6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.chartcap::before{content:"";width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#6d5df6,#9d8cff);display:inline-block}
+.cgrid .card{border-top:4px solid #6d5df6}
+.cgrid .card:nth-child(2){border-top-color:#10b981}
+.cgrid .card:nth-child(3){border-top-color:#06b6d4}
+.cgrid .card:nth-child(2) .chartcap{color:#047857}
+.cgrid .card:nth-child(2) .chartcap::before{background:linear-gradient(135deg,#10b981,#43d9a3)}
+.cgrid .card:nth-child(3) .chartcap{color:#0369a1}
+.cgrid .card:nth-child(3) .chartcap::before{background:linear-gradient(135deg,#06b6d4,#38d6ec)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);max-height:640px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
+th{background:linear-gradient(135deg,#6d5df6 0%,#8b7cff 100%);color:#fff;font-weight:800;cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
+th:first-child{position:sticky;left:0;z-index:3}
+th .arrow{color:#fff}
+th.tl{text-align:left}
+tbody tr:hover td{background:#fbfaff}
+th .arrow{opacity:.4;font-size:10px;margin-left:3px}
+th.sorted .arrow{opacity:1}
+tbody tr:nth-child(even) td{background:#faf7ff}
+tbody tr:nth-child(even) td:first-child{background:#faf7ff}
+tbody tr:hover td{background:#f1ebff!important}
+td.pos{color:var(--up);font-weight:800}
+td.neg{color:var(--down);font-weight:800}
+td.pos::before{content:"";display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid var(--up);margin-right:5px;vertical-align:middle}
+td.neg::before{content:"";display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid var(--down);margin-right:5px;vertical-align:middle}
+td .cellbar{position:relative;z-index:1}
+td.gmvcell{font-weight:700;color:#4c1d95}
+td.sharecell{font-weight:700;color:#0369a1}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#eef1f6;color:#475569}
+.tablefoot{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.tablefoot .lim{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.tablefoot select{padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px}
+.insight{border-radius:16px;padding:18px;border:1px solid var(--line);border-left-width:6px;background:#fff;box-shadow:var(--shadow)}
+.insight.why{border-left-color:#dc2626;background:linear-gradient(180deg,#fef5f4 0%,#fff 40%)}
+.insight.what{border-left-color:#0ea5e9;background:linear-gradient(180deg,#eef8fe 0%,#fff 40%)}
+.insight.how{border-left-color:#059669;background:linear-gradient(180deg,#ecfaf3 0%,#fff 40%)}
+.insight h4{margin:0 0 10px;font-size:15px}
+.insight .tag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:6px}
+.insight.why .tag{background:#fdeede;color:#b91c1c}
+.insight.what .tag{background:#e6f2fb;color:#0369a1}
+.insight.how .tag{background:#e7f6ef;color:#047857}
+.insight ul{margin:0;padding-left:18px}
+.insight li{margin:7px 0;font-size:13.5px;line-height:1.5}
+.insight li b{color:var(--brand)}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.hidden{display:none!important}
+.printhead{display:none}
+@media print{
+  @page{size:A4 landscape;margin:11mm}
+  html,body{background:#fff}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  .topbar,.actions,#uploader,.tabs,.reset,.btn,.btn-csv,.tablefoot,.spinner,.progress{display:none!important}
+  .filterbar{box-shadow:none}
+  .wrap{max-width:100%;padding:0}
+  .pane{display:block!important;page-break-before:always}
+  .pane:first-of-type{page-break-before:avoid}
+  .tablewrap{max-height:none}
+  .printhead{display:block;margin-bottom:12px;border-bottom:3px solid var(--brand)}
+  .printhead h1{margin:0;color:var(--brand);font-size:20px}
+  .printhead p{margin:3px 0 8px;font-size:11px;color:#555}
+  .card,.insight,.tablewrap{box-shadow:none;break-inside:avoid}
+  table{min-width:0;font-size:10px}
+  th,td{padding:5px 6px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="row">
+    <div class="brandmark">
+      <div class="logo">&#128202;</div>
+      <div class="title">
+        <h1>Brand Performance Dashboard</h1>
+        <p>GMV &middot; Net Orders &mdash; MoM &amp; DRR growth intelligence</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="btnNew">&#8635; Process New Sheet</button>
+      <button class="btn btn-light" id="btnPdf">&#11015; Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="uploader">
+    <div class="drop" id="drop">
+      <div style="font-size:38px">&#128229;</div>
+      <h2>Drop your data file here</h2>
+      <p>or click to browse. Each new file fully replaces the previous data.</p>
+      <div class="tipbox">Works 100% offline &mdash; no internet needed. <b>Best format: CSV</b> (fast &amp; reliable for large files). In Excel just do <b>File &rarr; Save As &rarr; CSV</b>. Excel <b>.xlsx</b> also works directly in modern browsers (Chrome/Edge/Firefox), but very large .xlsx files parse faster as CSV.</div>
+      <button class="btn btn-light" id="pick" style="background:var(--brand);color:#fff">Choose file</button>
+      <input type="file" id="file" accept=".csv,.xlsx,.xls" class="hidden">
+      <div class="spinner" id="spin"></div>
+      <div class="progress" id="prog"></div>
+      <div class="hint" id="dropHint">Expected columns: order_date, order_number, partner_name, brand_name, quantity, line_price_incl_tax, state_name, l2_name, product_id, partner_sku, upc, product_title</div>
+    </div>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div class="printhead" id="printHead"></div>
+    <div class="filterbar">
+      <div class="fld"><label>Month</label><select id="fMonth"></select></div>
+      <div class="fld"><label>Partner Name</label><select id="fPartner"></select></div>
+      <div class="fld"><label>Brand Name</label><select id="fBrand"></select></div>
+      <div class="fld"><label>Reason / State (AU)</label><select id="fState"></select></div>
+      <button class="btn btn-csv btn-sm reset" id="btnReset">Reset filters</button>
+      <div class="filtermeta" id="filterMeta"></div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-t="overview">Summary</button>
+      <button class="tab" data-t="drr">DRR Growth</button>
+      <button class="tab" data-t="l2">L2 Performance</button>
+      <button class="tab" data-t="pid">Top PIDs / SKUs</button>
+      <button class="tab" data-t="states">State Insights</button>
+      <button class="tab" data-t="insights">Insights &amp; Actions</button>
+    </div>
+
+    <div class="pane active" data-p="overview">
+      <div class="sectionhead"><div><h3 id="ovTitle">Overall Summary</h3><div class="desc" id="ovDesc"></div></div></div>
+      <div class="grid g3" id="metricCards"></div>
+      <div class="sectionhead"><div><h3>Monthly Trend</h3><div class="desc">Actual totals per month.</div></div></div>
+      <div class="grid g3 cgrid">
+        <div class="card"><div class="chartcap">GMV</div><div class="svgchart" id="cGmv"></div></div>
+        <div class="card"><div class="chartcap">Net Orders</div><div class="svgchart" id="cOrd"></div></div>
+        <div class="card"><div class="chartcap">Net Quantity</div><div class="svgchart" id="cUnit"></div></div>
+      </div>
+      <div class="sectionhead"><div><h3>Monthly Summary &amp; MoM</h3><div class="desc">Every month plus the period Grand Total. MoM % compares each month to the one before.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="summary">&#11015; CSV</button></div>
+      <div class="tablewrap"><table id="tSummary"></table></div>
+    </div>
+
+    <div class="pane" data-p="drr">
+      <div class="sectionhead"><div><h3>Daily Run Rate (DRR) &amp; Full-Month Projection</h3>
+        <div class="desc">DRR = metric &divide; days with data in month. Projection = DRR &times; calendar days. Growth is shown on DRR (fair for partial months) and on the projected full month.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="drr">&#11015; CSV</button></div>
+      <div class="grid g2 cgrid">
+        <div class="card"><div class="chartcap">GMV DRR &mdash; &#8377;/day by month</div><div class="svgchart" id="cDrrGmv"></div></div>
+        <div class="card"><div class="chartcap">Orders/day &amp; Qty/day by month</div><div class="svgchart" id="cDrrOU"></div></div>
+      </div>
+      <div class="sectionhead"><div><h3>DRR &amp; Projection Table</h3></div></div>
+      <div class="tablewrap"><table id="tDrr"></table></div>
+    </div>
+
+    <div class="pane" data-p="l2">
+      <div class="sectionhead"><div><h3>L2 Category Performance</h3>
+        <div class="desc">L2 GMV, units, orders with MoM growth, contribution share, and current-vs-previous comparison.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="l2">&#11015; CSV</button></div>
+      <div class="grid g2 cgrid">
+        <div class="card"><div class="chartcap">Top L2 by GMV</div><div class="svgchart" id="cL2bar"></div></div>
+        <div class="card"><div class="chartcap">L2 GMV &mdash; Current vs Previous</div><div class="svgchart" id="cL2cmp"></div></div>
+      </div>
+      <div class="sectionhead"><div><h3>L2 Detail</h3><div class="desc">Click any column header to sort.</div></div></div>
+      <div class="tablewrap"><table id="tL2"></table></div>
+    </div>
+
+    <div class="pane" data-p="pid">
+      <div class="sectionhead"><div><h3>PID / SKU Level Sales Performance</h3>
+        <div class="desc">Product ID with SKU, title, brand &amp; UPC. Sortable on every column. CSV exports all filtered rows.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="pid">&#11015; CSV (all filtered)</button></div>
+      <div class="grid g2 cgrid">
+        <div class="card"><div class="chartcap">Top PID contribution to GMV</div><div class="svgchart" id="cPidBar"></div></div>
+        <div class="card"><div class="chartcap">Top PIDs &mdash; Current vs Previous</div><div class="svgchart" id="cPidCmp"></div></div>
+      </div>
+      <div class="sectionhead"><div><h3>Product Detail</h3></div>
+        <div class="tablefoot"><div class="lim">Show top
+          <select id="pidLimit"><option>50</option><option selected>100</option><option>250</option><option>500</option><option value="all">All</option></select> rows</div></div></div>
+      <div class="tablewrap"><table id="tPid"></table></div>
+    </div>
+
+    <div class="pane" data-p="states">
+      <div class="sectionhead"><div><h3>State-Level Performance</h3>
+        <div class="desc" id="stDesc">GMV &amp; order share by state, ASP (GMV &divide; Net Quantity).</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="states">&#11015; CSV</button></div>
+      <div class="grid g2 cgrid">
+        <div class="card"><div class="chartcap">Top states by GMV</div><div class="svgchart" id="cStGmv"></div></div>
+        <div class="card"><div class="chartcap">Orders &mdash; Current vs Previous by state</div><div class="svgchart" id="cStCmp"></div></div>
+      </div>
+      <div class="sectionhead"><div><h3>State Detail &mdash; shares &amp; ASP</h3><div class="desc">Click any column to sort. ASP = GMV &divide; Net Quantity.</div></div></div>
+      <div class="tablewrap"><table id="tStates"></table></div>
+      <div class="sectionhead"><div><h3>Top PID Contribution by State</h3><div class="desc">Top 5 products by GMV within each state (top 20 states), each with its share of that state. Respects the selected scope.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="statepid">&#11015; CSV</button></div>
+      <div class="tablewrap"><table id="tStatePid"></table></div>
+    </div>
+
+    <div class="pane" data-p="insights">
+      <div class="sectionhead"><div><h3>Insights &amp; Actions</h3>
+        <div class="desc">Auto-generated from the current filter view.</div></div></div>
+      <div class="grid g3">
+        <div class="insight why"><h4><span class="tag">Why it happened</span></h4><ul id="insWhy"></ul></div>
+        <div class="insight what"><h4><span class="tag">What's happening</span></h4><ul id="insWhat"></ul></div>
+        <div class="insight how"><h4><span class="tag">How to fix</span></h4><ul id="insHow"></ul></div>
+      </div>
+      <div class="sectionhead"><div><h3>Movers &mdash; biggest MoM swings (GMV)</h3><div class="desc">Brands / L2 / States driving the change.</div></div>
+        <button class="btn btn-csv btn-sm" data-csv="movers">&#11015; CSV</button></div>
+      <div class="tablewrap"><table id="tMovers"></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+let RAW=[],MONTHS=[],CURVIEW={};const sortState={};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function ymLabel(ym){const p=ym.split('-');return MN[+p[1]-1]+" '"+p[0].slice(2);}
+function daysInMonth(ym){const a=ym.split('-').map(Number);return new Date(a[0],a[1],0).getDate();}
+function num(v){if(v==null||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;const n=parseFloat(String(v).replace(/[, ]/g,''));return isFinite(n)?n:0;}
+function fmtN(n){return Math.round(n).toLocaleString('en-IN');}
+function fmtCr(n){const a=Math.abs(n);if(a>=1e7)return '₹'+(n/1e7).toFixed(2)+' Cr';if(a>=1e5)return '₹'+(n/1e5).toFixed(2)+' L';if(a>=1e3)return '₹'+(n/1e3).toFixed(1)+'K';return '₹'+Math.round(n);}
+function fmtCompact(n){const a=Math.abs(n);if(a>=1e7)return (n/1e7).toFixed(1)+'Cr';if(a>=1e5)return (n/1e5).toFixed(1)+'L';if(a>=1e3)return (n/1e3).toFixed(1)+'K';return Math.round(n).toString();}
+function pct(c,p){if(!p)return null;return (c-p)/p*100;}
+function pctStr(p){if(p==null)return '—';return (p>=0?'+':'')+p.toFixed(1)+'%';}
+function growthClass(p){if(p==null)return 'flat';return p>0.05?'up':(p<-0.05?'down':'flat');}
+function arrow(p){if(p==null)return '•';return p>0.05?'▲':(p<-0.05?'▼':'▬');}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function trim(s,n){s=String(s==null?'':s);return s.length>n?s.slice(0,n-1)+'…':s;}
+
+/* ---------- COLUMN MAP + INGEST ---------- */
+const HEADER_MAP={
+  order_date:['order_date','orderdate','order date','date'],
+  order_number:['order_number','ordernumber','order no','order_no'],
+  partner_name:['partner_name','partner','seller_name','seller'],
+  brand_name:['brand_name','brand'],
+  state_name:['state_name','state','state name'],
+  l2_name:['l2_name','l2','l2 name','category_l2'],
+  quantity:['quantity','qty','units','sum of quantity'],
+  line_price_incl_tax:['line_price_incl_tax','line price incl tax','gmv','line_price'],
+  product_id:['product_id','productid','pid','product id'],
+  partner_sku:['partner_sku','sku','partner sku'],
+  upc:['upc'],
+  product_title:['product_title','product title','title','product_name'],
+  order_status:['order_status','status']
+};
+function resolveCols(headers){
+  const low=headers.map(h=>String(h==null?'':h).trim().toLowerCase());
+  const idx={};
+  for(const key in HEADER_MAP){let f=-1;for(const a of HEADER_MAP[key]){const i=low.indexOf(a);if(i>=0){f=i;break;}}idx[key]=f;}
+  return idx;
+}
+function parseDate(v){
+  if(v instanceof Date)return isNaN(v)?null:v;
+  if(typeof v==='number'){if(v>20000&&v<80000){const d=new Date(Math.round((v-25569)*86400*1000));return isNaN(d)?null:d;}return null;}
+  const s=String(v).trim();if(!s)return null;
+  const d=new Date(s.replace(' ','T'));if(!isNaN(d))return d;
+  const d2=new Date(s);return isNaN(d2)?null:d2;
+}
+function ingestRows(aoa){
+  const headers=aoa[0]||[];
+  const idx=resolveCols(headers);
+  const need=['order_date','order_number','quantity','line_price_incl_tax'];
+  const miss=need.filter(k=>idx[k]<0);
+  if(miss.length)throw new Error('Missing required column(s): '+miss.join(', ')+'.\n\nHeaders found:\n'+headers.join(', '));
+  const out=[];let bad=0;
+  for(let r=1;r<aoa.length;r++){
+    const row=aoa[r];if(!row||row.length===0)continue;
+    const dt=parseDate(row[idx.order_date]);if(!dt){bad++;continue;}
+    const ym=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    out.push({ym,day:dt.getDate(),
+      ordn:String(row[idx.order_number]==null?'':row[idx.order_number]),
+      gmv:num(row[idx.line_price_incl_tax]),units:num(row[idx.quantity]),
+      partner:idx.partner_name>=0?(row[idx.partner_name]||'Unknown'):'Unknown',
+      brand:idx.brand_name>=0?(row[idx.brand_name]||'Unknown'):'Unknown',
+      state:idx.state_name>=0?(row[idx.state_name]||'Unknown'):'Unknown',
+      l2:idx.l2_name>=0?(row[idx.l2_name]||'Unknown'):'Unknown',
+      pid:idx.product_id>=0?String(row[idx.product_id]==null?'':row[idx.product_id]):'',
+      sku:idx.partner_sku>=0?String(row[idx.partner_sku]==null?'':row[idx.partner_sku]):'',
+      upc:idx.upc>=0?String(row[idx.upc]==null?'':row[idx.upc]):'',
+      title:idx.product_title>=0?String(row[idx.product_title]==null?'':row[idx.product_title]):''});
+  }
+  if(!out.length)throw new Error('No rows with a valid order_date were found ('+bad+' rows skipped). Check the order_date column.');
+  return out;
+}
+
+/* ---------- CSV PARSER (zero dependency) ---------- */
+function parseCSV(text){
+  const rows=[];let field='',row=[],inQ=false;let i=0;const n=text.length;
+  if(text.charCodeAt(0)===0xFEFF)i=1;
+  for(;i<n;i++){const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else inQ=false;}else field+=c;}
+    else{if(c==='"')inQ=true;else if(c===','){row.push(field);field='';}
+      else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';}
+      else if(c==='\r'){}else field+=c;}
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows;
+}
+
+/* ---------- OFFLINE XLSX READER (zero dependency) ---------- */
+function decodeXml(s){return String(s).replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(+d)).replace(/&#x([0-9a-f]+);/gi,(m,h)=>String.fromCharCode(parseInt(h,16))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');}
+function colToIdx(a){let n=0;for(let i=0;i<a.length;i++)n=n*26+(a.charCodeAt(i)-64);return n-1;}
+function serialToISO(v){const ms=Math.round((v-25569)*86400*1000);const d=new Date(ms);if(isNaN(d))return '';return d.toISOString().slice(0,19).replace('T',' ');}
+function unzip(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf);
+  let eo=-1;for(let i=buf.byteLength-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eo=i;break;}}
+  if(eo<0)throw new Error('Not a valid .xlsx (zip) file.');
+  const count=dv.getUint16(eo+10,true),off=dv.getUint32(eo+16,true);
+  const files={};let p=off;
+  for(let k=0;k<count;k++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const method=dv.getUint16(p+10,true),compSize=dv.getUint32(p+20,true);
+    const nameLen=dv.getUint16(p+28,true),extraLen=dv.getUint16(p+30,true),cmtLen=dv.getUint16(p+32,true);
+    const lho=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(u8.subarray(p+46,p+46+nameLen));
+    files[name]={method,compSize,lho};
+    p+=46+nameLen+extraLen+cmtLen;
+  }
+  return {dv,u8,files};
+}
+async function readEntry(z,name){
+  const f=z.files[name];if(!f)return null;
+  const p=f.lho;
+  if(z.dv.getUint32(p,true)!==0x04034b50)throw new Error('Corrupt local header.');
+  const nameLen=z.dv.getUint16(p+26,true),extraLen=z.dv.getUint16(p+28,true);
+  const start=p+30+nameLen+extraLen;
+  const comp=z.u8.subarray(start,start+f.compSize);
+  if(f.method===0)return new TextDecoder().decode(comp);
+  if(typeof DecompressionStream==='undefined')throw new Error('This browser cannot open .xlsx offline. Please save the file as CSV and drop it here.');
+  const ds=new DecompressionStream('deflate-raw');
+  const ab=await new Response(new Blob([comp]).stream().pipeThrough(ds)).arrayBuffer();
+  return new TextDecoder().decode(new Uint8Array(ab));
+}
+async function parseXlsx(buf){
+  const z=unzip(buf);
+  // shared strings
+  const ss=[];const sx=await readEntry(z,'xl/sharedStrings.xml');
+  if(sx){const siRe=/<si>([\s\S]*?)<\/si>/g;let m;while((m=siRe.exec(sx))){const tRe=/<t[^>]*>([\s\S]*?)<\/t>/g;let t,txt='';while((t=tRe.exec(m[1])))txt+=t[1];ss.push(decodeXml(txt));}}
+  // styles -> which style indices are dates
+  const dateFmt=new Set([14,15,16,17,18,19,20,21,22,45,46,47]);
+  const xfs=[];const st=await readEntry(z,'xl/styles.xml');
+  if(st){
+    const nf=/<numFmt[^>]*numFmtId="(\d+)"[^>]*formatCode="([^"]*)"/g;let m;
+    while((m=nf.exec(st))){const code=decodeXml(m[2]).toLowerCase().replace(/\[[^\]]*\]/g,'').replace(/"[^"]*"/g,'');if(/y/.test(code)||(/d/.test(code)&&/m/.test(code))||/d/.test(code))dateFmt.add(+m[1]);}
+    const xb=st.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/);
+    if(xb){const parts=xb[1].split(/<xf\b/).slice(1);parts.forEach(pt=>{const mm=pt.match(/numFmtId="(\d+)"/);xfs.push(mm?+mm[1]:0);});}
+  }
+  // pick first worksheet
+  let target='xl/worksheets/sheet1.xml';
+  const wb=await readEntry(z,'xl/workbook.xml');const rels=await readEntry(z,'xl/_rels/workbook.xml.rels');
+  if(wb&&rels){const sm=wb.match(/<sheet\b[^>]*r:id="([^"]+)"/);if(sm){const rm=rels.match(new RegExp('<Relationship[^>]*Id="'+sm[1]+'"[^>]*Target="([^"]+)"'));if(rm){let tg=rm[1].replace(/^\/?xl\//,'').replace(/^\//,'');target='xl/'+tg;}}}
+  let sheet=await readEntry(z,target);
+  if(sheet==null)sheet=await readEntry(z,'xl/worksheets/sheet1.xml');
+  if(sheet==null)throw new Error('Could not find a worksheet inside the .xlsx.');
+  const aoa=[];const rowRe=/<row[^>]*\br="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;let rm;
+  const cRe=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  while((rm=rowRe.exec(sheet))){
+    const ri=+rm[1]-1;const arr=aoa[ri]||(aoa[ri]=[]);let cm;cRe.lastIndex=0;
+    while((cm=cRe.exec(rm[2]))){
+      const at=cm[1],content=cm[2]||'';
+      const rM=at.match(/r="([A-Z]+)\d+"/);if(!rM)continue;
+      const col=colToIdx(rM[1]);
+      const tM=at.match(/t="([^"]+)"/);const t=tM?tM[1]:'';
+      const sM=at.match(/s="(\d+)"/);const sIdx=sM?+sM[1]:-1;
+      let val=null;
+      if(t==='inlineStr'){const im=content.match(/<t[^>]*>([\s\S]*?)<\/t>/);val=im?decodeXml(im[1]):'';}
+      else{const vm=content.match(/<v>([\s\S]*?)<\/v>/);const raw=vm?vm[1]:null;
+        if(raw==null)val=null;
+        else if(t==='s')val=ss[+raw];
+        else if(t==='str'||t==='b')val=decodeXml(raw);
+        else{const isDate=sIdx>=0&&xfs[sIdx]!==undefined&&dateFmt.has(xfs[sIdx]);val=isDate?serialToISO(+raw):+raw;}
+      }
+      arr[col]=val;
+    }
+  }
+  return aoa.filter(r=>r);
+}
+
+/* ---------- FILE HANDLING ---------- */
+function showProg(t){const p=$('#prog');p.style.display='block';p.textContent=t;}
+async function handleFile(f){
+  $('#spin').style.display='block';
+  const name=f.name.toLowerCase();
+  showProg('Reading '+f.name+' …');
+  try{
+    let aoa;
+    if(name.endsWith('.csv')){
+      const text=await f.text();
+      showProg('Parsing CSV …');
+      aoa=parseCSV(text);
+    }else{
+      showProg('Opening Excel file offline … (large files may take up to a minute)');
+      const buf=await f.arrayBuffer();
+      aoa=await parseXlsx(buf);
+    }
+    showProg('Crunching numbers …');
+    await new Promise(r=>setTimeout(r,20));
+    const rows=ingestRows(aoa);
+    RAW=rows;MONTHS=[...new Set(RAW.map(r=>r.ym))].sort();
+    Object.keys(sortState).forEach(k=>delete sortState[k]);
+    buildFilters();
+    $('#uploader').classList.add('hidden');
+    $('#dash').classList.remove('hidden');
+    render();
+  }catch(err){
+    alert('Could not process this file:\n\n'+err.message);
+    $('#dropHint').textContent='Upload failed — tip: save the sheet as CSV (File → Save As → CSV) and try again.';
+  }finally{$('#spin').style.display='none';$('#prog').style.display='none';}
+}
+
+/* ---------- FILTERS ---------- */
+function buildFilters(){
+  const f=getFilters();
+  const S=(a,b)=>String(a).localeCompare(String(b));
+  const dv=(rows,k)=>[...new Set(rows.map(r=>r[k]).filter(v=>v!==''&&v!=null))].sort(S);
+  var partners=dv(RAW,'partner');
+  if(f.partner!=='__all__'&&partners.indexOf(f.partner)<0)f.partner='__all__';
+  var rB=RAW.filter(r=>f.partner==='__all__'||r.partner===f.partner);
+  var brands=dv(rB,'brand');
+  if(f.brand!=='__all__'&&brands.indexOf(f.brand)<0)f.brand='__all__';
+  var rS=rB.filter(r=>f.brand==='__all__'||r.brand===f.brand);
+  var states=dv(rS,'state');
+  if(f.state!=='__all__'&&states.indexOf(f.state)<0)f.state='__all__';
+  fill('#fMonth',MONTHS.map(m=>[m,ymLabel(m)]),'All months');
+  fill('#fPartner',partners.map(v=>[v,v]),'All partners');
+  fill('#fBrand',brands.map(v=>[v,v]),'All brands');
+  fill('#fState',states.map(v=>[v,v]),'All states');
+  const setSel=(sel,val)=>{const el=$(sel);if(!el)return;el.value=[...el.options].some(o=>o.value===val)?val:'__all__';};
+  setSel('#fMonth',f.month);setSel('#fPartner',f.partner);setSel('#fBrand',f.brand);setSel('#fState',f.state);
+}
+function fill(sel,pairs,all){const el=$(sel);el.innerHTML='';const o=document.createElement('option');o.value='__all__';o.textContent=all;el.appendChild(o);pairs.forEach(p=>{const op=document.createElement('option');op.value=p[0];op.textContent=p[1];el.appendChild(op);});}
+function getFilters(){return{month:$('#fMonth').value,partner:$('#fPartner').value,brand:$('#fBrand').value,state:$('#fState').value};}
+/* Month acts as a FOCUS selector (for MoM), not a hard row filter, so comparisons always have prior-month data. Partner/Brand/State are hard filters. */
+function filteredRows(){const f=getFilters();return RAW.filter(r=>(f.partner==='__all__'||r.partner===f.partner)&&(f.brand==='__all__'||r.brand===f.brand)&&(f.state==='__all__'||r.state===f.state));}
+
+/* ---------- AGGREGATION ---------- */
+function byMonth(rows){const m={};for(const r of rows){let o=m[r.ym];if(!o)o=m[r.ym]={gmv:0,units:0,ordc:0,maxday:0};o.gmv+=r.gmv;o.units+=r.units;if(r.ordn)o.ordc++;if(r.day>o.maxday)o.maxday=r.day;}return m;}
+function groupMonthly(rows,kf){const g={};for(const r of rows){const k=kf(r);let e=g[k];if(!e)e=g[k]={};let o=e[r.ym];if(!o)o=e[r.ym]={gmv:0,units:0,ordc:0};o.gmv+=r.gmv;o.units+=r.units;if(r.ordn)o.ordc++;}return g;}
+function focusMonths(rows){const present=[...new Set(rows.map(r=>r.ym))].sort();const f=getFilters();if(f.month!=='__all__'){const i=MONTHS.indexOf(f.month);return{cur:f.month,prev:i>0?MONTHS[i-1]:null};}return{cur:present[present.length-1]||null,prev:present.length>1?present[present.length-2]:null};}
+function metricPack(mm,ym){if(!ym||!mm[ym])return null;const o=mm[ym];const days=o.maxday||daysInMonth(ym);const cal=daysInMonth(ym);return{gmv:o.gmv,units:o.units,orders:o.ordc,days,cal,gmvDRR:o.gmv/days,unitsDRR:o.units/days,ordersDRR:o.ordc/days,gmvProj:o.gmv/days*cal,unitsProj:o.units/days*cal,ordersProj:o.ordc/days*cal};}
+
+/* ---------- SVG CHARTS ---------- */
+function svgWrap(w,h,inner){return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet" font-family="-apple-system,Segoe UI,Roboto,sans-serif">'+inner+'</svg>';}
+function svgVBars(el,labels,values,fmt,color){
+  const W=640,H=300,pL=60,pB=40,pT=18,pR=14,pw=W-pL-pR,ph=H-pT-pB;
+  const max=Math.max(1,...values),nm=max*1.12;let g='';
+  for(let i=0;i<=4;i++){const y=pT+ph*(1-i/4);g+='<line x1="'+pL+'" y1="'+y+'" x2="'+(W-pR)+'" y2="'+y+'" stroke="#eef1f6"/><text x="'+(pL-8)+'" y="'+(y+3)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+fmt(nm*i/4)+'</text>';}
+  const n=values.length,step=pw/n,bw=Math.min(70,step*0.55);let b='';
+  values.forEach((v,i)=>{const x=pL+step*i+(step-bw)/2,hh=ph*(v/nm),y=pT+ph-hh;
+    b+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+Math.max(0,hh)+'" rx="4" fill="'+color+'"><title>'+esc(labels[i])+': '+fmt(v)+'</title></rect>';
+    b+='<text x="'+(x+bw/2)+'" y="'+(pT+ph+16)+'" text-anchor="middle" font-size="10.5" fill="#475569">'+esc(labels[i])+'</text>';
+    b+='<text x="'+(x+bw/2)+'" y="'+(y-4)+'" text-anchor="middle" font-size="9.5" fill="#334155" font-weight="700">'+fmt(v)+'</text>';});
+  el.innerHTML=svgWrap(W,H,g+b);
+}
+function svgGroupVBars(el,labels,series,fmt){
+  const W=640,H=310,pL=60,pB=54,pT=18,pR=14,pw=W-pL-pR,ph=H-pT-pB;
+  let max=1;series.forEach(s=>s.values.forEach(v=>{if(v>max)max=v;}));const nm=max*1.12;let g='';
+  for(let i=0;i<=4;i++){const y=pT+ph*(1-i/4);g+='<line x1="'+pL+'" y1="'+y+'" x2="'+(W-pR)+'" y2="'+y+'" stroke="#eef1f6"/><text x="'+(pL-8)+'" y="'+(y+3)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+fmt(nm*i/4)+'</text>';}
+  const n=labels.length,step=pw/n,gw=step*0.66,bw=gw/series.length;let b='';
+  labels.forEach((lb,i)=>{const gx=pL+step*i+(step-gw)/2;
+    series.forEach((s,j)=>{const v=s.values[i]||0,x=gx+bw*j,hh=ph*(v/nm),y=pT+ph-hh;
+      b+='<rect x="'+x+'" y="'+y+'" width="'+(bw*0.9)+'" height="'+Math.max(0,hh)+'" rx="3" fill="'+s.color+'"><title>'+esc(lb)+' – '+esc(s.name)+': '+fmt(v)+'</title></rect>';});
+    b+='<text x="'+(gx+gw/2)+'" y="'+(pT+ph+15)+'" text-anchor="middle" font-size="9.5" fill="#475569">'+esc(trim(lb,10))+'</text>';});
+  let lg='';series.forEach((s,j)=>{lg+='<rect x="'+(pL+j*150)+'" y="'+(H-20)+'" width="11" height="11" rx="2" fill="'+s.color+'"/><text x="'+(pL+j*150+16)+'" y="'+(H-11)+'" font-size="11" fill="#475569">'+esc(s.name)+'</text>';});
+  el.innerHTML=svgWrap(W,H,g+b+lg);
+}
+function svgHBars(el,labels,values,fmt,color){
+  const W=640,rowH=26,pL=150,pR=70,pT=8,pB=8,H=pT+pB+labels.length*rowH,pw=W-pL-pR;
+  const max=Math.max(1,...values);let s='';
+  labels.forEach((lb,i)=>{const y=pT+i*rowH,v=values[i],w=Math.max(2,pw*(v/max));
+    s+='<text x="'+(pL-8)+'" y="'+(y+rowH/2+3)+'" text-anchor="end" font-size="10.5" fill="#334155">'+esc(trim(lb,22))+'</text>';
+    s+='<rect x="'+pL+'" y="'+(y+4)+'" width="'+w+'" height="'+(rowH-10)+'" rx="4" fill="'+color+'"><title>'+esc(lb)+': '+fmt(v)+'</title></rect>';
+    s+='<text x="'+(pL+w+6)+'" y="'+(y+rowH/2+3)+'" font-size="10" fill="#475569" font-weight="700">'+fmt(v)+'</text>';});
+  el.innerHTML=svgWrap(W,H,s);
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  const rows=filteredRows(),f=getFilters();
+  const parts=[rows.length.toLocaleString('en-IN')+' rows'];
+  if(f.month!=='__all__')parts.push('Focus: '+ymLabel(f.month));else parts.push('All months');
+  if(f.partner!=='__all__')parts.push(f.partner);
+  if(f.brand!=='__all__')parts.push(f.brand);
+  if(f.state!=='__all__')parts.push(f.state);
+  $('#filterMeta').textContent=parts.join('  ·  ');
+  updatePrintHead(rows,f);
+  const mm=byMonth(rows),fm=focusMonths(rows);
+  CURVIEW={rows,mm,fm};
+  renderMetrics(mm,fm);renderSummaryTable(mm);renderTrend(mm);renderDRR(mm);renderL2(rows,fm);renderPID(rows,fm);renderStates(rows,fm);renderInsights(rows,mm,fm);
+}
+const GRADS=['linear-gradient(135deg,#6d5df6 0%,#9d8cff 100%)','linear-gradient(135deg,#10b981 0%,#43d9a3 100%)','linear-gradient(135deg,#06b6d4 0%,#38d6ec 100%)'];
+function renderMetrics(mm,fm){
+  const desc=$('#ovDesc'),title=$('#ovTitle'),all=getFilters().month==='__all__';
+  const ms=Object.keys(mm).sort();
+  if(!ms.length){$('#metricCards').innerHTML='<div class="empty">No data for this selection.</div>';desc.textContent='';return;}
+  const fMoney=x=>fmtCr(x),fNum=x=>fmtN(x);
+  if(all){
+    let G=0,O=0,U=0;ms.forEach(m=>{G+=mm[m].gmv;O+=mm[m].ordc;U+=mm[m].units;});
+    const first=ms[0],last=ms[ms.length-1],n=ms.length;
+    title.textContent='Overall Summary — Period Total';
+    desc.innerHTML='Total across <b>'+n+'</b> month'+(n>1?'s':'')+' ('+ymLabel(first)+' → '+ymLabel(last)+'). <span class="pill">Pick a Month above to switch to MoM view</span>';
+    const defs=[
+      {cap:'GMV',sub:'Period total · Σ line_price_incl_tax',tot:G,f:m=>mm[m].gmv,money:true},
+      {cap:'Net Orders',sub:'Period total · count of order_number',tot:O,f:m=>mm[m].ordc,money:false},
+      {cap:'Net Quantity',sub:'Period total · Σ quantity (AE)',tot:U,f:m=>mm[m].units,money:false}
+    ];
+    $('#metricCards').innerHTML=defs.map((d,i)=>{
+      const fmt=d.money?fMoney:fNum;const fv=d.f(first),lv=d.f(last),g=n>1?pct(lv,fv):null,avg=d.tot/n;
+      let pk=ms[0];ms.forEach(m=>{if(d.f(m)>d.f(pk))pk=m;});
+      return '<div class="card metric tile" style="background:'+GRADS[i]+'"><div class="cap">'+d.cap+'</div><div class="sub">'+d.sub+'</div>'+
+        '<div class="big">'+fmt(d.tot)+'</div>'+
+        '<span class="badge '+growthClass(g)+'">'+arrow(g)+' '+pctStr(g)+' <span style="font-weight:600;opacity:.8">'+ymLabel(first)+'→'+ymLabel(last)+'</span></span>'+
+        '<div class="mrow"><div>Months<br><b>'+n+'</b></div>'+
+        '<div>Monthly avg<br><b>'+fmt(avg)+'</b></div>'+
+        '<div>Peak month<br><b>'+ymLabel(pk)+'</b> ('+fmt(d.f(pk))+')</div></div></div>';
+    }).join('');
+    return;
+  }
+  const cur=metricPack(mm,fm.cur),prev=metricPack(mm,fm.prev);
+  if(!cur){$('#metricCards').innerHTML='<div class="empty">No data for this month.</div>';desc.textContent='';return;}
+  const partial=cur.days<cur.cal;
+  title.textContent=ymLabel(fm.cur)+' — Month Summary';
+  desc.innerHTML='<b>'+ymLabel(fm.cur)+'</b>'+(fm.prev?' vs previous <b>'+ymLabel(fm.prev)+'</b>':'')+' — '+cur.days+' of '+cur.cal+' days'+(partial?' <span class="pill">partial · projected to full</span>':' <span class="pill">complete month</span>');
+  const defs=[
+    {cap:'GMV',sub:'Σ line_price_incl_tax',val:cur.gmv,drr:cur.gmvDRR,proj:cur.gmvProj,pv:prev&&prev.gmv,pdrr:prev&&prev.gmvDRR,pproj:prev&&prev.gmvProj,money:true},
+    {cap:'Net Orders',sub:'count of order_number',val:cur.orders,drr:cur.ordersDRR,proj:cur.ordersProj,pv:prev&&prev.orders,pdrr:prev&&prev.ordersDRR,pproj:prev&&prev.ordersProj,money:false},
+    {cap:'Net Quantity',sub:'Σ quantity (AE)',val:cur.units,drr:cur.unitsDRR,proj:cur.unitsProj,pv:prev&&prev.units,pdrr:prev&&prev.unitsDRR,pproj:prev&&prev.unitsProj,money:false}
+  ];
+  $('#metricCards').innerHTML=defs.map((d,i)=>{
+    const fmt=d.money?fMoney:fNum;
+    const gAbs=prev?pct(d.val,d.pv):null,gDrr=prev?pct(d.drr,d.pdrr):null,gProj=prev?pct(d.proj,d.pproj):null;
+    const head=partial?gDrr:gAbs,hl=partial?'DRR MoM':'MoM';
+    return '<div class="card metric tile" style="background:'+GRADS[i]+'"><div class="cap">'+d.cap+'</div><div class="sub">'+d.sub+'</div>'+
+      '<div class="big">'+fmt(d.val)+'</div>'+
+      '<span class="badge '+growthClass(head)+'">'+arrow(head)+' '+pctStr(head)+' <span style="font-weight:600;opacity:.8">'+hl+'</span></span>'+
+      '<div class="mrow"><div>DRR<br><b>'+fmt(d.drr)+'</b>/day</div>'+
+      '<div>Proj. full month<br><b>'+fmt(d.proj)+'</b> <span class="badge '+growthClass(gProj)+'" style="margin:0;padding:1px 6px;font-size:10px">'+pctStr(gProj)+'</span></div>'+
+      '<div>Abs. MoM<br><b>'+pctStr(gAbs)+'</b></div></div></div>';
+  }).join('');
+}
+function renderSummaryTable(mm){
+  const ms=Object.keys(mm).sort();if(!ms.length){$('#tSummary').innerHTML='';return;}
+  const packs=ms.map(m=>metricPack(mm,m));
+  const data=ms.map((m,i)=>{const p=packs[i],pp=i>0?packs[i-1]:null;
+    return{Month:ymLabel(m),GMV:p.gmv,'GMV MoM%':pp?pct(p.gmv,pp.gmv):null,Orders:p.orders,'Ord MoM%':pp?pct(p.orders,pp.orders):null,Qty:p.units,'Qty MoM%':pp?pct(p.units,pp.units):null};});
+  let G=0,O=0,U=0;ms.forEach(m=>{G+=mm[m].gmv;O+=mm[m].ordc;U+=mm[m].units;});
+  data.push({Month:'Grand Total',GMV:G,'GMV MoM%':null,Orders:O,'Ord MoM%':null,Qty:U,'Qty MoM%':null,_tot:true});
+  CURVIEW.summary=data;
+  renderTable('tSummary',[['Month','tl'],['GMV'],['GMV MoM%'],['Orders'],['Ord MoM%'],['Qty'],['Qty MoM%']],data,
+    {Month:r=>r.Month,GMV:r=>fmtCr(r.GMV),'GMV MoM%':r=>r['GMV MoM%'],Orders:r=>fmtN(r.Orders),'Ord MoM%':r=>r['Ord MoM%'],Qty:r=>fmtN(r.Qty),'Qty MoM%':r=>r['Qty MoM%']},
+    {sortKeys:{Month:'Month',GMV:'GMV','GMV MoM%':'GMV MoM%',Orders:'Orders','Ord MoM%':'Ord MoM%',Qty:'Qty','Qty MoM%':'Qty MoM%'},deltaCols:['GMV MoM%','Ord MoM%','Qty MoM%'],bars:{'GMV':{key:'GMV',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'}}});
+}
+function renderTrend(mm){
+  const ms=Object.keys(mm).sort(),lab=ms.map(ymLabel);
+  svgVBars($('#cGmv'),lab,ms.map(m=>mm[m].gmv),fmtCompact,'#7c3aed');
+  svgVBars($('#cOrd'),lab,ms.map(m=>mm[m].ordc),fmtCompact,'#0ea5e9');
+  svgVBars($('#cUnit'),lab,ms.map(m=>mm[m].units),fmtCompact,'#059669');
+}
+function renderDRR(mm){
+  const ms=Object.keys(mm).sort(),lab=ms.map(ymLabel),packs=ms.map(m=>metricPack(mm,m));
+  svgVBars($('#cDrrGmv'),lab,packs.map(p=>p.gmvDRR),fmtCompact,'#6d28d9');
+  svgGroupVBars($('#cDrrOU'),lab,[{name:'Orders/day',color:'#0ea5e9',values:packs.map(p=>p.ordersDRR)},{name:'Qty/day',color:'#059669',values:packs.map(p=>p.unitsDRR)}],fmtN);
+  const cols=[['Month','tl'],['GMV'],['Days'],['GMV DRR/day'],['Proj. GMV'],['DRR Δ%'],['Orders'],['Ord DRR/day'],['Proj. Ord'],['Qty'],['Qty DRR/day'],['Proj. Qty']];
+  const data=ms.map((m,i)=>{const p=packs[i],pp=i>0?packs[i-1]:null;return{Month:ymLabel(m),GMV:p.gmv,Days:p.days,'GMV DRR/day':p.gmvDRR,'Proj. GMV':p.gmvProj,'DRR Δ%':pp?pct(p.gmvDRR,pp.gmvDRR):null,Orders:p.orders,'Ord DRR/day':p.ordersDRR,'Proj. Ord':p.ordersProj,Qty:p.units,'Qty DRR/day':p.unitsDRR,'Proj. Qty':p.unitsProj};});
+  CURVIEW.drr=data;
+  renderTable('tDrr',cols,data,{Month:r=>r.Month,GMV:r=>fmtCr(r.GMV),Days:r=>r.Days,'GMV DRR/day':r=>fmtCr(r['GMV DRR/day']),'Proj. GMV':r=>fmtCr(r['Proj. GMV']),'DRR Δ%':r=>r['DRR Δ%'],Orders:r=>fmtN(r.Orders),'Ord DRR/day':r=>fmtN(r['Ord DRR/day']),'Proj. Ord':r=>fmtN(r['Proj. Ord']),Qty:r=>fmtN(r.Qty),'Qty DRR/day':r=>fmtN(r['Qty DRR/day']),'Proj. Qty':r=>fmtN(r['Proj. Qty'])},
+    {sortKeys:{Month:'Month',GMV:'GMV',Days:'Days','GMV DRR/day':'GMV DRR/day','Proj. GMV':'Proj. GMV','DRR Δ%':'DRR Δ%',Orders:'Orders','Ord DRR/day':'Ord DRR/day','Proj. Ord':'Proj. Ord',Qty:'Qty','Qty DRR/day':'Qty DRR/day','Proj. Qty':'Proj. Qty'},deltaCols:['DRR Δ%'],bars:{'GMV':{key:'GMV',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'},'GMV DRR/day':{key:'GMV DRR/day',rgba:'rgba(109,40,217,.18)'},'Proj. GMV':{key:'Proj. GMV',rgba:'rgba(245,158,11,.20)'}}});
+}
+/* Mode-aware grouping: when Month=All, gmv/orders/units are PERIOD TOTALS (sum of all months);
+   when a month is focused they are that month. curG/pgmv are the latest month vs its prior (for MoM chart & %). */
+function computeGroup(rows,kf,fm){
+  const all=getFilters().month==='__all__';
+  const g=groupMonthly(rows,kf);
+  return finalizeGroup(g,fm,all);
+}
+function finalizeGroup(g,fm,all){
+  const arr=Object.keys(g).map(k=>{
+    let gmv=0,units=0,ordc=0;
+    if(all){for(const ym in g[k]){gmv+=g[k][ym].gmv;units+=g[k][ym].units;ordc+=g[k][ym].ordc;}}
+    else{const c=g[k][fm.cur]||{gmv:0,units:0,ordc:0};gmv=c.gmv;units=c.units;ordc=c.ordc;}
+    const cG=g[k][fm.cur]?g[k][fm.cur].gmv:0;
+    const pG=fm.prev?(g[k][fm.prev]?g[k][fm.prev].gmv:0):null;
+    return{key:k,label:k,gmv:gmv,units:units,orders:ordc,curG:cG,pgmv:pG,gGmv:(pG!=null&&pG!==0)?pct(cG,pG):null};
+  });
+  const tot=arr.reduce((s,x)=>s+x.gmv,0);
+  arr.forEach(x=>x.share=tot?x.gmv/tot*100:0);
+  return arr;
+}
+function renderL2(rows,fm){
+  if(!fm.cur){$('#tL2').innerHTML='';return;}
+  let arr=computeGroup(rows,r=>r.l2,fm).filter(x=>x.gmv>0||x.pgmv);arr.sort((a,b)=>b.gmv-a.gmv);
+  const top=arr.slice(0,10);
+  svgHBars($('#cL2bar'),top.map(x=>x.label),top.map(x=>x.gmv),fmtCompact,'#7c3aed');
+  const t8=arr.slice(0,8);
+  svgGroupVBars($('#cL2cmp'),t8.map(x=>x.label),[{name:ymLabel(fm.prev||fm.cur),color:'#94a3b8',values:t8.map(x=>x.pgmv||0)},{name:ymLabel(fm.cur),color:'#5b21b6',values:t8.map(x=>x.curG)}],fmtCompact);
+  CURVIEW.l2=arr;
+  renderTable('tL2',[['L2 Category','tl'],['GMV'],['Share %'],['Prev GMV'],['MoM %'],['Orders'],['Qty']],arr,
+    {'L2 Category':r=>r.label,GMV:r=>fmtCr(r.gmv),'Share %':r=>r.share.toFixed(1)+'%','Prev GMV':r=>r.pgmv==null?'—':fmtCr(r.pgmv),'MoM %':r=>r.gGmv,Orders:r=>fmtN(r.orders),Qty:r=>fmtN(r.units)},
+    {sortKeys:{'L2 Category':'label',GMV:'gmv','Share %':'share','Prev GMV':'pgmv','MoM %':'gGmv',Orders:'orders',Qty:'units'},deltaCols:['MoM %'],bars:{'GMV':{key:'gmv',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'},'Share %':{key:'share',rgba:'rgba(14,165,233,.20)',cls:'sharecell'}}});
+}
+function renderPID(rows,fm){
+  if(!fm.cur){$('#tPid').innerHTML='';return;}
+  const all=getFilters().month==='__all__';
+  const g={};
+  for(const r of rows){let e=g[r.pid];
+    if(!e)e=g[r.pid]={pid:r.pid,title:r.title,brand:r.brand,upc:r.upc,sku:r.sku,tG:0,tU:0,tO:0,cG:0,cU:0,cO:0,pG:0};
+    if(!e.title&&r.title)e.title=r.title;if(!e.sku&&r.sku)e.sku=r.sku;if(!e.upc&&r.upc)e.upc=r.upc;
+    e.tG+=r.gmv;e.tU+=r.units;if(r.ordn)e.tO++;
+    if(r.ym===fm.cur){e.cG+=r.gmv;e.cU+=r.units;if(r.ordn)e.cO++;}
+    else if(r.ym===fm.prev){e.pG+=r.gmv;}}
+  let arr=Object.values(g).map(e=>{const gmv=all?e.tG:e.cG,units=all?e.tU:e.cU,orders=all?e.tO:e.cO;
+    return{pid:e.pid,title:e.title,brand:e.brand,upc:e.upc,sku:e.sku,gmv:gmv,units:units,orders:orders,curG:e.cG,pgmv:e.pG,gGmv:e.pG?pct(e.cG,e.pG):null};}).filter(x=>x.gmv>0||x.pgmv>0);
+  const tot=arr.reduce((s,x)=>s+x.gmv,0);arr.forEach(x=>x.share=tot?x.gmv/tot*100:0);
+  arr.sort((a,b)=>b.gmv-a.gmv);CURVIEW.pid=arr;
+  const top=arr.slice(0,12);
+  svgHBars($('#cPidBar'),top.map(x=>x.title?x.title:x.pid),top.map(x=>x.gmv),fmtCompact,'#0ea5e9');
+  const t8=arr.slice(0,8);
+  svgGroupVBars($('#cPidCmp'),t8.map(x=>x.title?trim(x.title,10):x.pid.slice(-6)),[{name:ymLabel(fm.prev||fm.cur),color:'#94a3b8',values:t8.map(x=>x.pgmv||0)},{name:ymLabel(fm.cur),color:'#5b21b6',values:t8.map(x=>x.curG)}],fmtCompact);
+  drawPidTable();
+}
+function drawPidTable(){
+  const arr=CURVIEW.pid||[],lim=$('#pidLimit').value;
+  const shown=lim==='all'?arr:arr.slice(0,+lim);
+  renderTable('tPid',[['PID','tl'],['Product Title','tl'],['Brand','tl'],['UPC','tl'],['SKU','tl'],['GMV'],['Share %'],['Prev GMV'],['MoM %'],['Orders'],['Qty']],shown,
+    {PID:r=>r.pid,'Product Title':r=>esc(r.title||'—'),Brand:r=>esc(r.brand||'—'),UPC:r=>esc(r.upc||'—'),SKU:r=>esc(r.sku||'—'),GMV:r=>fmtCr(r.gmv),'Share %':r=>r.share.toFixed(2)+'%','Prev GMV':r=>r.pgmv?fmtCr(r.pgmv):'—','MoM %':r=>r.gGmv,Orders:r=>fmtN(r.orders),Qty:r=>fmtN(r.units)},
+    {sortKeys:{PID:'pid','Product Title':'title',Brand:'brand',UPC:'upc',SKU:'sku',GMV:'gmv','Share %':'share','Prev GMV':'pgmv','MoM %':'gGmv',Orders:'orders',Qty:'units'},deltaCols:['MoM %'],pidTable:true,bars:{'GMV':{key:'gmv',rgba:'rgba(14,165,233,.20)',cls:'gmvcell'},'Share %':{key:'share',rgba:'rgba(124,58,237,.20)',cls:'sharecell'}}});
+}
+function fmtRs(n){return '₹'+Math.round(n).toLocaleString('en-IN');}
+function renderStates(rows,fm){
+  const clear=()=>{$('#tStates').innerHTML='';$('#tStatePid').innerHTML='';$('#cStGmv').innerHTML='';$('#cStCmp').innerHTML='';};
+  if(!fm.cur){clear();return;}
+  const all=getFilters().month==='__all__';
+  const sd=$('#stDesc');if(sd)sd.innerHTML='Showing <b>'+(all?'All months (period total)':ymLabel(fm.cur))+'</b> · GMV &amp; order share by state, ASP (GMV &divide; Net Quantity). The Orders comparison chart below always shows the latest month vs the previous month.';
+  const g=groupMonthly(rows,r=>r.state);
+  let arr=Object.keys(g).map(k=>{
+    let gmv=0,units=0,ordc=0;
+    if(all){for(const ym in g[k]){gmv+=g[k][ym].gmv;units+=g[k][ym].units;ordc+=g[k][ym].ordc;}}
+    else{const c=g[k][fm.cur]||{gmv:0,units:0,ordc:0};gmv=c.gmv;units=c.units;ordc=c.ordc;}
+    const curO=g[k][fm.cur]?g[k][fm.cur].ordc:0,prevO=fm.prev&&g[k][fm.prev]?g[k][fm.prev].ordc:0;
+    const cG=g[k][fm.cur]?g[k][fm.cur].gmv:0,pG=fm.prev?(g[k][fm.prev]?g[k][fm.prev].gmv:0):null;
+    return{state:k,gmv:gmv,orders:ordc,units:units,asp:units?gmv/units:0,curO:curO,porders:prevO,curG:cG,pgmv:pG,gGmv:(pG!=null&&pG!==0)?pct(cG,pG):null};
+  }).filter(x=>x.gmv>0||x.pgmv);
+  const sumG=arr.reduce((s,x)=>s+x.gmv,0),sumO=arr.reduce((s,x)=>s+x.orders,0);
+  arr.forEach(x=>{x.gshare=sumG?x.gmv/sumG*100:0;x.oshare=sumO?x.orders/sumO*100:0;});
+  arr.sort((a,b)=>b.gmv-a.gmv);
+  if(!arr.length){clear();return;}
+  const top=arr.slice(0,10);
+  svgHBars($('#cStGmv'),top.map(x=>x.state),top.map(x=>x.gmv),fmtCompact,'#7c3aed');
+  const t8=arr.slice(0,8);
+  svgGroupVBars($('#cStCmp'),t8.map(x=>trim(x.state,10)),[{name:ymLabel(fm.prev||fm.cur),color:'#94a3b8',values:t8.map(x=>x.porders||0)},{name:ymLabel(fm.cur),color:'#0ea5e9',values:t8.map(x=>x.curO)}],fmtN);
+  CURVIEW.states=arr;
+  renderTable('tStates',[['State','tl'],['GMV'],['GMV Share %'],['Orders'],['Order Share %'],['Qty'],['ASP'],['GMV MoM %']],arr,
+    {State:r=>esc(r.state),GMV:r=>fmtCr(r.gmv),'GMV Share %':r=>r.gshare.toFixed(1)+'%',Orders:r=>fmtN(r.orders),'Order Share %':r=>r.oshare.toFixed(1)+'%',Qty:r=>fmtN(r.units),ASP:r=>fmtRs(r.asp),'GMV MoM %':r=>r.gGmv},
+    {sortKeys:{State:'state',GMV:'gmv','GMV Share %':'gshare',Orders:'orders','Order Share %':'oshare',Qty:'units',ASP:'asp','GMV MoM %':'gGmv'},deltaCols:['GMV MoM %'],bars:{'GMV':{key:'gmv',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'},'GMV Share %':{key:'gshare',rgba:'rgba(14,165,233,.20)',cls:'sharecell'},'ASP':{key:'asp',rgba:'rgba(5,150,105,.18)'}}});
+  // top-5 PID contribution per state (respects scope: all months or focused month)
+  const stMap={};
+  for(const r of rows){if(!all&&r.ym!==fm.cur)continue;let sm=stMap[r.state]||(stMap[r.state]={});let e=sm[r.pid]||(sm[r.pid]={gmv:0,orders:0,units:0,title:r.title,brand:r.brand});e.gmv+=r.gmv;e.units+=r.units;if(r.ordn)e.orders++;if(!e.title&&r.title)e.title=r.title;if(!e.brand&&r.brand)e.brand=r.brand;}
+  const TOPN=5,nStates=Math.min(20,arr.length);
+  const spRows=[];
+  arr.slice(0,nStates).forEach(s=>{
+    const sm=stMap[s.state]||{};
+    const pids=Object.keys(sm).map(pid=>({pid,gmv:sm[pid].gmv,orders:sm[pid].orders,units:sm[pid].units,title:sm[pid].title,brand:sm[pid].brand}));
+    pids.sort((a,b)=>b.gmv-a.gmv);
+    pids.slice(0,TOPN).forEach((p,i)=>spRows.push({state:s.state,rank:i+1,pid:p.pid,title:p.title,brand:p.brand,pidGmv:p.gmv,pidShare:s.gmv?p.gmv/s.gmv*100:0,pidOrders:p.orders,pidUnits:p.units,_first:i===0}));
+  });
+  CURVIEW.statepid=spRows;
+  renderTable('tStatePid',[['State','tl'],['Rank'],['PID','tl'],['Product Title','tl'],['Brand','tl'],['PID GMV'],['% of State GMV'],['Orders'],['Qty']],spRows,
+    {State:r=>r._first?'<b>'+esc(r.state)+'</b>':'<span style=\"color:#c7c9d6\">'+esc(r.state)+'</span>',Rank:r=>r.rank,PID:r=>r.pid,'Product Title':r=>esc(r.title||'—'),Brand:r=>esc(r.brand||'—'),'PID GMV':r=>fmtCr(r.pidGmv),'% of State GMV':r=>r.pidShare.toFixed(1)+'%',Orders:r=>fmtN(r.pidOrders),Qty:r=>fmtN(r.pidUnits)},
+    {sortKeys:{State:'state',Rank:'rank',PID:'pid','Product Title':'title',Brand:'brand','PID GMV':'pidGmv','% of State GMV':'pidShare',Orders:'pidOrders',Qty:'pidUnits'},bars:{'PID GMV':{key:'pidGmv',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'},'% of State GMV':{key:'pidShare',rgba:'rgba(14,165,233,.20)',cls:'sharecell'}}});
+}
+function renderInsights(rows,mm,fm){
+  const why=$('#insWhy'),what=$('#insWhat'),how=$('#insHow');why.innerHTML=what.innerHTML=how.innerHTML='';
+  if(!fm.cur){why.innerHTML='<li>No data.</li>';return;}
+  const cur=metricPack(mm,fm.cur),prev=metricPack(mm,fm.prev),partial=cur.days<cur.cal;
+  const li=(el,h)=>{const l=document.createElement('li');l.innerHTML=h;el.appendChild(l);};
+  li(what,'<b>'+ymLabel(fm.cur)+'</b> GMV is <b>'+fmtCr(cur.gmv)+'</b> across '+cur.days+' of '+cur.cal+' days (DRR <b>'+fmtCr(cur.gmvDRR)+'</b>/day).');
+  if(partial)li(what,'At current run-rate, <b>'+ymLabel(fm.cur)+'</b> is projected to close at <b>'+fmtCr(cur.gmvProj)+'</b> GMV, <b>'+fmtN(cur.ordersProj)+'</b> orders and <b>'+fmtN(cur.unitsProj)+'</b> qty.');
+  if(prev){li(what,'DRR growth vs <b>'+ymLabel(fm.prev)+'</b>: GMV <b>'+pctStr(pct(cur.gmvDRR,prev.gmvDRR))+'</b>, Orders '+pctStr(pct(cur.ordersDRR,prev.ordersDRR))+', Qty '+pctStr(pct(cur.unitsDRR,prev.unitsDRR))+'.');
+    const aov=cur.gmv/(cur.orders||1),paov=prev.gmv/(prev.orders||1);li(what,'Avg order value <b>'+fmtCr(aov)+'</b> ('+pctStr(pct(aov,paov))+' vs prev).');}
+  const bd=byDelta(computeGroup(rows,r=>r.brand,fm).filter(x=>x.pgmv)),ld=byDelta(computeGroup(rows,r=>r.l2,fm).filter(x=>x.pgmv)),sd=byDelta(computeGroup(rows,r=>r.state,fm).filter(x=>x.pgmv));
+  const gain=bd.filter(x=>x.delta>0).slice(0,3),lose=bd.filter(x=>x.delta<0).slice(-3).reverse();
+  if(prev){
+    if(gain.length)li(why,'Growth led by brands: '+gain.map(g=>'<b>'+esc(g.label)+'</b> (+'+fmtCr(g.delta)+')').join(', ')+'.');
+    if(lose.length)li(why,'Drag from brands: '+lose.map(g=>'<b>'+esc(g.label)+'</b> ('+fmtCr(g.delta)+')').join(', ')+'.');
+    const lg=ld.filter(x=>x.delta>0)[0],ll=ld.filter(x=>x.delta<0).slice(-1)[0];
+    if(lg)li(why,'Top category gain: <b>'+esc(lg.label)+'</b> (+'+fmtCr(lg.delta)+', '+pctStr(lg.gGmv)+').');
+    if(ll)li(why,'Weakest category: <b>'+esc(ll.label)+'</b> ('+fmtCr(ll.delta)+', '+pctStr(ll.gGmv)+').');
+    const sg=sd.filter(x=>x.delta>0)[0],sl=sd.filter(x=>x.delta<0).slice(-1)[0];
+    if(sg)li(why,'Region tailwind: <b>'+esc(sg.label)+'</b> (+'+fmtCr(sg.delta)+').');
+    if(sl)li(why,'Region headwind: <b>'+esc(sl.label)+'</b> ('+fmtCr(sl.delta)+').');
+  }else li(why,'Only one month in view — add more history for MoM attribution.');
+  if(prev){
+    if(lose.length)li(how,'Recover declining brands — prioritise <b>'+esc(lose[0].label)+'</b>: check stock, pricing &amp; buy-box.');
+    const ll=ld.filter(x=>x.delta<0).slice(-1)[0];if(ll)li(how,'Investigate <b>'+esc(ll.label)+'</b> category ('+pctStr(ll.gGmv)+'): likely assortment or discount gap.');
+    if(gain.length)li(how,'Double down on <b>'+esc(gain[0].label)+'</b> — protect inventory &amp; extend the winning assortment.');
+    const conc=(CURVIEW.pid||[]).slice(0,10).reduce((s,x)=>s+x.share,0);
+    li(how,'Top-10 PIDs drive <b>'+conc.toFixed(0)+'%</b> of GMV — '+(conc>40?'high concentration risk; broaden the hero set.':'healthy spread; push next-tier PIDs.'));
+    if(partial)li(how,(cur.cal-cur.days)+' days left in '+ymLabel(fm.cur)+' — to beat '+ymLabel(fm.prev)+' you need ≈ <b>'+fmtCr(Math.max(0,prev.gmv-cur.gmv))+'</b> more GMV.');
+  }else li(how,'Upload multi-month data to unlock recovery/scale recommendations.');
+  const M=[];
+  bd.slice(0,5).forEach(x=>M.push({dim:'Brand',name:x.label,cur:x.curG,prev:x.pgmv,delta:x.delta,g:x.gGmv}));
+  bd.slice(-5).reverse().forEach(x=>{if(x.delta<0)M.push({dim:'Brand',name:x.label,cur:x.curG,prev:x.pgmv,delta:x.delta,g:x.gGmv});});
+  ld.slice(0,3).forEach(x=>M.push({dim:'L2',name:x.label,cur:x.curG,prev:x.pgmv,delta:x.delta,g:x.gGmv}));
+  sd.slice(0,3).forEach(x=>M.push({dim:'State',name:x.label,cur:x.curG,prev:x.pgmv,delta:x.delta,g:x.gGmv}));
+  M.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));CURVIEW.movers=M;
+  renderTable('tMovers',[['Dimension','tl'],['Name','tl'],['Current GMV'],['Prev GMV'],['Δ GMV'],['MoM %']],M,
+    {Dimension:r=>r.dim,Name:r=>esc(r.name),'Current GMV':r=>fmtCr(r.cur),'Prev GMV':r=>fmtCr(r.prev||0),'Δ GMV':r=>({cls:r.delta>=0?'pos':'neg',txt:(r.delta>=0?'+':'')+fmtCr(r.delta)}),'MoM %':r=>r.g},
+    {sortKeys:{Dimension:'dim',Name:'name','Current GMV':'cur','Prev GMV':'prev','Δ GMV':'delta','MoM %':'g'},deltaCols:['MoM %'],bars:{'Current GMV':{key:'cur',rgba:'rgba(124,58,237,.20)',cls:'gmvcell'}}});
+}
+function byDelta(a){return a.map(x=>Object.assign({},x,{delta:(x.curG||0)-(x.pgmv||0)})).sort((p,q)=>q.delta-p.delta);}
+
+/* ---------- TABLE ---------- */
+function deltaCell(v){if(v==null)return{txt:'—',cls:''};return{txt:pctStr(v),cls:v>0.05?'pos':(v<-0.05?'neg':'')};}
+function renderTable(id,cols,data,fmts,opts){
+  opts=opts||{};const el=$('#'+id),sk=opts.sortKeys||{},dc=opts.deltaCols||[],ss=sortState[id];
+  const bars=opts.bars||{};
+  const thead='<thead><tr>'+cols.map(c=>{const nm=c[0],cl=c[1]==='tl'?'tl':'',isS=ss&&ss.key===nm;return '<th class="'+cl+' '+(isS?'sorted':'')+'" data-k="'+esc(nm)+'">'+nm+'<span class="arrow">'+(isS?(ss.dir>0?'▲':'▼'):'↕')+'</span></th>';}).join('')+'</tr></thead>';
+  let rows=[...data];
+  const totals=rows.filter(r=>r._tot);rows=rows.filter(r=>!r._tot);
+  if(ss){const key=sk[ss.key]||ss.key;rows.sort((a,b)=>{let x=a[key],y=b[key];if(x==null)x=-Infinity;if(y==null)y=-Infinity;if(typeof x==='string'||typeof y==='string')return ss.dir*String(x).localeCompare(String(y));return ss.dir*(x-y);});}
+  rows=rows.concat(totals);
+  const barMax={};for(const col in bars){const k=bars[col].key;barMax[col]=Math.max(1,...rows.filter(r=>!r._tot).map(r=>Math.abs(+r[k]||0)));}
+  const body='<tbody>'+rows.map(r=>'<tr'+(r._tot?' style="font-weight:800;background:#efeafe"':'')+'>'+cols.map(c=>{const nm=c[0],f=fmts[nm];let out=f?f(r):r[nm];let cl=c[1]==='tl'?'tl':'';let style='';
+    if(dc.indexOf(nm)>=0){const d=deltaCell(typeof out==='number'?out:r[sk[nm]||nm]);out=d.txt;cl+=' '+d.cls;}
+    else if(out&&typeof out==='object'){cl+=' '+(out.cls||'');out=out.txt;}
+    if(bars[nm]){const b=bars[nm];const val=Math.abs(+r[b.key]||0);const w=Math.round(val/barMax[nm]*100);cl+=' '+(b.cls||'');style=' style="background:linear-gradient(90deg,'+b.rgba+' '+w+'%,transparent '+w+'%)"';}
+    return '<td class="'+cl+'"'+style+'>'+(out==null?'—':out)+'</td>';}).join('')+'</tr>').join('')+'</tbody>';
+  el.innerHTML=thead+body;
+  el.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k,pv=sortState[id];sortState[id]=(pv&&pv.key===k)?{key:k,dir:-pv.dir}:{key:k,dir:isText(cols,k)?1:-1};if(opts.pidTable)drawPidTable();else render();});
+}
+function isText(cols,k){const c=cols.find(x=>x[0]===k);return c&&c[1]==='tl';}
+
+/* ---------- CSV EXPORT ---------- */
+function toCSV(h,rows){const e=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};return h.map(e).join(',')+'\n'+rows.map(r=>r.map(e).join(',')).join('\n');}
+function download(name,csv){const b=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function stamp(){const f=getFilters();return[f.month!=='__all__'?f.month:'allM',f.partner!=='__all__'?f.partner:'allP',f.brand!=='__all__'?f.brand:'allB',f.state!=='__all__'?f.state:'allS'].join('_').replace(/[^\w\-]+/g,'-');}
+function exportCSV(w){
+  if(w==='summary'){const d=CURVIEW.summary||[];download('Summary_'+stamp()+'.csv',toCSV(['Month','GMV','GMV_MoM_pct','Orders','Orders_MoM_pct','Qty','Qty_MoM_pct'],d.map(r=>[r.Month,Math.round(r.GMV),r['GMV MoM%']==null?'':r['GMV MoM%'].toFixed(1),r.Orders,r['Ord MoM%']==null?'':r['Ord MoM%'].toFixed(1),r.Qty,r['Qty MoM%']==null?'':r['Qty MoM%'].toFixed(1)])));}
+  else if(w==='drr'){const d=CURVIEW.drr||[];download('DRR_'+stamp()+'.csv',toCSV(['Month','GMV','Days','GMV_DRR_per_day','Proj_GMV','DRR_delta_pct','Orders','Ord_DRR_per_day','Proj_Ord','Qty','Qty_DRR_per_day','Proj_Qty'],d.map(r=>[r.Month,Math.round(r.GMV),r.Days,r['GMV DRR/day'].toFixed(2),Math.round(r['Proj. GMV']),r['DRR Δ%']==null?'':r['DRR Δ%'].toFixed(1),r.Orders,r['Ord DRR/day'].toFixed(2),Math.round(r['Proj. Ord']),r.Qty,r['Qty DRR/day'].toFixed(2),Math.round(r['Proj. Qty'])])));}
+  else if(w==='l2'){const d=CURVIEW.l2||[];download('L2_'+stamp()+'.csv',toCSV(['L2','GMV','Share_pct','Prev_GMV','MoM_pct','Orders','Qty'],d.map(r=>[r.label,Math.round(r.gmv),r.share.toFixed(2),r.pgmv==null?'':Math.round(r.pgmv),r.gGmv==null?'':r.gGmv.toFixed(1),r.orders,r.units])));}
+  else if(w==='pid'){const d=CURVIEW.pid||[];download('PID_'+stamp()+'.csv',toCSV(['PID','Product_Title','Brand','UPC','SKU','GMV','Share_pct','Prev_GMV','MoM_pct','Orders','Qty'],d.map(r=>[r.pid,r.title,r.brand,r.upc,r.sku,Math.round(r.gmv),r.share.toFixed(2),r.pgmv?Math.round(r.pgmv):'',r.gGmv==null?'':r.gGmv.toFixed(1),r.orders,r.units])));}
+  else if(w==='states'){const d=CURVIEW.states||[];download('States_'+stamp()+'.csv',toCSV(['State','GMV','GMV_Share_pct','Orders','Order_Share_pct','Qty','ASP','GMV_MoM_pct'],d.map(r=>[r.state,Math.round(r.gmv),r.gshare.toFixed(2),r.orders,r.oshare.toFixed(2),r.units,Math.round(r.asp),r.gGmv==null?'':r.gGmv.toFixed(1)])));}
+  else if(w==='statepid'){const d=CURVIEW.statepid||[];download('State-Top-PID_'+stamp()+'.csv',toCSV(['State','Rank','PID','Product_Title','Brand','PID_GMV','Pct_of_State_GMV','PID_Orders','PID_Qty'],d.map(r=>[r.state,r.rank,r.pid,r.title,r.brand,Math.round(r.pidGmv),r.pidShare.toFixed(1),r.pidOrders,r.pidUnits])));}
+  else if(w==='movers'){const d=CURVIEW.movers||[];download('Movers_'+stamp()+'.csv',toCSV(['Dimension','Name','Current_GMV','Prev_GMV','Delta_GMV','MoM_pct'],d.map(r=>[r.dim,r.name,Math.round(r.cur),Math.round(r.prev||0),Math.round(r.delta),r.g==null?'':r.g.toFixed(1)])));}
+}
+function updatePrintHead(rows,f){const el=$('#printHead'),fm=focusMonths(rows);
+  el.innerHTML='<h1>Brand Performance Dashboard</h1><p>Generated '+new Date().toLocaleString('en-IN')+' · Rows: '+rows.length.toLocaleString('en-IN')+' · Filters — Month: '+(f.month==='__all__'?'All':ymLabel(f.month))+', Partner: '+esc(f.partner==='__all__'?'All':f.partner)+', Brand: '+esc(f.brand==='__all__'?'All':f.brand)+', State: '+esc(f.state==='__all__'?'All':f.state)+(fm.cur?(' · Focus: '+ymLabel(fm.cur)+(fm.prev?(' vs '+ymLabel(fm.prev)):'')):'')+'</p>';}
+
+/* ---------- EVENTS ---------- */
+$('#pick').onclick=()=>$('#file').click();
+$('#drop').onclick=e=>{if(e.target.id==='drop'||e.target.tagName==='H2'||e.target.tagName==='P')$('#file').click();};
+$('#file').onchange=e=>{if(e.target.files[0])handleFile(e.target.files[0]);};
+const drop=$('#drop');
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+$('#btnNew').onclick=()=>{RAW=[];MONTHS=[];Object.keys(sortState).forEach(k=>delete sortState[k]);$('#dash').classList.add('hidden');$('#uploader').classList.remove('hidden');$('#file').value='';$('#dropHint').textContent='Previous data cleared. Upload a new file to process.';};
+$('#btnPdf').onclick=()=>window.print();
+$('#btnReset').onclick=()=>{$('#fMonth').value='__all__';$('#fPartner').value='__all__';$('#fBrand').value='__all__';$('#fState').value='__all__';buildFilters();render();};
+['#fMonth','#fPartner','#fBrand','#fState'].forEach(s=>$(s).addEventListener('change',()=>{Object.keys(sortState).forEach(k=>delete sortState[k]);buildFilters();render();}));
+$('#pidLimit').onchange=drawPidTable;
+$('#tabs').addEventListener('click',e=>{if(!e.target.classList.contains('tab'))return;$$('.tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');const t=e.target.dataset.t;$$('.pane').forEach(p=>p.classList.toggle('active',p.dataset.p===t));});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-csv]');if(b)exportCSV(b.dataset.csv);});
+</script>
+</body>
+</html>
